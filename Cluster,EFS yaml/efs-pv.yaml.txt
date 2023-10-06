@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: efs-pv
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+# storage class 추가 06.06 수정
+  storageClassName: "efs-sc"
+  persistentVolumeReclaimPolicy: Retain
+  csi:
+    driver: efs.csi.aws.com
+# 자신이 만든 EFS ID 입력 (fs-xxxx)
+    volumeHandle: fs-02e213eb2dd900d8a

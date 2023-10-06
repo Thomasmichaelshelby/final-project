@@ -1,0 +1,130 @@
+apiVersion: eksctl.io/v1alpha5
+
+kind: ClusterConfig
+
+metadata:
+
+  name: RECA2-PRD-EKS-CLUSTER # 생성할 EKS 클러스터명
+
+  region: ap-northeast-2   # 클러스터를 생성할 리젼
+
+  version: '1.27'
+
+vpc:
+  id: vpc-0a861ed5ccdc5d9f9
+  subnets:
+    private:
+# 클러스터에 연결하고자 하는 서브넷 ID 잘 넣어줄 것
+      private-a1: { id: subnet-0d396f3b2281a7292 }
+      private-a2: { id: subnet-0abde204f6639de07 }
+      private-c1: { id: subnet-0e7499cc4e0d3db1f }
+      private-c2: { id: subnet-03471cec0fa48a009 }
+
+iam:
+# 쿠버네티스 CNI 플러그인? 권한 추가 (확실하지 않음)
+  withOIDC: true
+
+# 06.07. 프로세스를 잘못 죽여서 노드가 다 날라간 김에 클러스터 싹 삭제하고 efs-csi-driver 권한 이런거 내용 추가함
+#serviceAccounts:
+
+#    - metadata:
+
+#        name: efs-csi-driver
+
+#        namespace: kube-system
+
+#      attachPolicyARNs: 
+#        - 'arn:aws:iam::457017831224:policy/AmazonEKS_EFS_CSI_Driver_Policy'
+
+#      wellKnownPolicies:
+
+#        efsCSIController: true
+# 06.07. 이거 추가해도 정책이 잘 들어가기는 하는데 인식을 못함. 좀 찾아보니 클러스터 문제라는 것 같음 걍 주석 처리함
+
+managedNodeGroups:
+# 클러스터의 노드 그룹명
+  - name: RECA2-PRD-NODEG-NGINX
+# 클러스터 워커 노드의 최소 개수
+    minSize: 2                  
+# 클러스터 워커 노드의 최대 개수
+    maxSize: 4
+# 클러스터 워커 노드의 개수
+    desiredCapacity: 2
+# 클러스터 워커 노드의 EBS 용량 (단위: GiB)
+    volumeSize: 20
+# 06.07. 최대 pod 개수 문제로 micro -> small
+    instanceType: t2.small
+
+    privateNetworking: true
+
+		subnets:
+# 위에서 key=value로 정의했던 private-a1 으로 입력해도 무방
+      - subnet-0d396f3b2281a7292
+# private-a2 으로 입력해도 무방
+      - subnet-0e7499cc4e0d3db1f
+
+    iam:
+
+      withAddonPolicies:
+# AWS ECR에 대한 권한 추가
+        ImageBuilder: true
+# alb ingress에 대한 권한 추가
+        albIngress: true
+
+        awsLoadBalancerController: true
+
+        externalDNS: true
+
+        efs: true
+
+        autoScaler: true
+
+        cloudWatch: true
+
+    ssh:
+# 워커 노드에 SSH 접속 허용
+      allow: true
+# 워커 노드에 SSH 접속을 위해 사용할 pem키 명(aws key pairs에 >등록되어 있어야함)
+      publicKeyName: reca2
+# 클러스터의 노드 그룹명
+  - name: RECA2-PRD-NODEG-TOMCAT
+
+    minSize: 2
+
+    maxSize: 4
+
+    desiredCapacity: 2
+
+    volumeSize: 20
+
+    instanceType: t2.small
+
+    privateNetworking: true
+
+    subnets:
+      - subnet-03471cec0fa48a009
+      - subnet-0abde204f6639de07
+
+    iam:
+
+      withAddonPolicies:
+
+        ImageBuilder: true
+
+        albIngress: true
+
+        awsLoadBalancerController: true
+
+        externalDNS: true
+
+        efs: true
+
+        autoScaler: true
+
+        cloudWatch: true
+
+    ssh:
+
+      allow: true
+
+      publicKeyName: reca2
